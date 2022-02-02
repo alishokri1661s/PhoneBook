@@ -5,13 +5,16 @@ import com.alish.phonebook.repository.PhoneBookRepo;
 import org.jobrunr.jobs.annotations.Job;
 import org.jobrunr.scheduling.JobScheduler;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import javax.transaction.Transactional;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,7 +34,8 @@ public class PhoneBookService {
 
     public Contact addContact(Contact contact) {
         Contact newContact = phoneBookRepo.save(contact);
-        jobScheduler.enqueue(() -> getGithubRepositories(newContact));
+        if (contact.getGithubId() != null)
+            jobScheduler.enqueue(() -> getGithubRepositories(newContact));
         return newContact;
     }
 
@@ -45,8 +49,12 @@ public class PhoneBookService {
         String url = "https://api.github.com/users/" + githubId + "/repos";
 
         RestTemplate restTemplate = new RestTemplate();
-        Map[] maps;
-        maps = restTemplate.getForObject(url, Map[].class);
+        try {
+        ResponseEntity<Map[]> response = restTemplate.getForEntity(url, Map[].class);
+        if (response.getStatusCode() != HttpStatus.OK)
+            return;
+
+        Map[] maps = response.getBody();
 
         assert maps != null;
         List<String> list = Arrays.stream(maps)
@@ -54,5 +62,10 @@ public class PhoneBookService {
 
         contact.setGithubRepositories(list);
         phoneBookRepo.save(contact);
+        }
+        catch (Exception e){
+            System.err.println(e.getMessage());
+        }
+
     }
 }
