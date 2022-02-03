@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.alish</groupId>
     <artifactId>PhoneBook</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <name>PhoneBook</name>
     <description>PhoneBook</description>
     <properties>
